@@ -44,11 +44,11 @@ Votre mission : **valider l'intégrité de l'héritage, corriger ce qui doit l'�
 
 ## 🌐 DEV WEB
 
-- [ ] Écrire une interface de chat (Streamlit, Flask, HTML/JS — au choix)
+- [x] Écrire une interface de chat (Streamlit, Flask, HTML/JS — au choix)
 - [ ] Se connecter au serveur déployé par l'INFRA (`http://localhost:11434`)
 - [ ] Afficher l'historique de la conversation
 - [ ] Montrer l'état de connexion au serveur (connecté / déconnecté)
-- [ ] La lancer en une commande depuis `rendu/devweb/`
+- [x] La lancer en une commande depuis `rendu/devweb/`
 
 ---
 
