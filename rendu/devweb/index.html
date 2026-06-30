@@ -13,6 +13,8 @@
     --text: #e6e6e6;
     --muted: #8a8f98;
     --border: #2a2e37;
+    --success: #22c55e;
+    --danger: #ef4444;
   }
   * { box-sizing: border-box; }
   body {
@@ -25,6 +27,9 @@
     flex-direction: column;
   }
   header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 14px 20px;
     border-bottom: 1px solid var(--border);
     font-weight: 600;
@@ -32,7 +37,27 @@
     color: var(--text);
     background: var(--panel);
   }
-  header span { color: var(--muted); font-weight: 400; font-size: 13px; }
+  .title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .title span { color: var(--muted); font-weight: 400; font-size: 13px; }
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--danger);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.06);
+  }
+  .status-dot.connected { background: var(--success); }
   #chat {
     flex: 1;
     overflow-y: auto;
@@ -94,7 +119,13 @@
 </style>
 </head>
 <body>
-  <header>AI Chat <span id="model-label"></span></header>
+  <header>
+    <div class="title">AI Chat <span id="model-label"></span></div>
+    <div class="status">
+      <span id="status-dot" class="status-dot"></span>
+      <span id="status-text">Checking…</span>
+    </div>
+  </header>
   <div id="chat"></div>
   <form id="form">
     <textarea id="input" rows="1" placeholder="Type a message..."></textarea>
@@ -107,6 +138,8 @@ const formEl = document.getElementById('form');
 const inputEl = document.getElementById('input');
 const sendBtn = document.getElementById('send');
 const modelLabel = document.getElementById('model-label');
+const statusDot = document.getElementById('status-dot');
+const statusText = document.getElementById('status-text');
 modelLabel.textContent = "(__MODEL_NAME__)";
 
 let history = [];
@@ -118,6 +151,40 @@ function addBubble(role, text) {
   chatEl.appendChild(div);
   chatEl.scrollTop = chatEl.scrollHeight;
   return div;
+}
+
+function setStatus(connected, label) {
+  statusDot.classList.toggle('connected', connected);
+  statusText.textContent = label;
+}
+
+async function checkConnection() {
+  try {
+    const res = await fetch('/api/health');
+    const data = await res.json();
+    setStatus(Boolean(data.ok), data.ok ? 'Connected' : 'Disconnected');
+  } catch (err) {
+    setStatus(false, 'Disconnected');
+  }
+}
+
+async function loadHistory() {
+  try {
+    const res = await fetch('/api/history');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (Array.isArray(data) && data.length) {
+      history = data;
+      chatEl.innerHTML = '';
+      data.forEach((entry) => {
+        if (entry && entry.role && entry.content !== undefined) {
+          addBubble(entry.role, entry.content);
+        }
+      });
+    }
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 inputEl.addEventListener('input', () => {
@@ -172,14 +239,20 @@ formEl.addEventListener('submit', async (e) => {
     }
 
     history.push({ role: 'assistant', content: full });
+    await checkConnection();
   } catch (err) {
     botDiv.classList.remove('pending');
     botDiv.textContent = 'Error: ' + err.message;
+    await checkConnection();
   } finally {
     sendBtn.disabled = false;
     inputEl.focus();
   }
 });
+
+loadHistory();
+checkConnection();
+setInterval(checkConnection, 10000);
 </script>
 </body>
 </html>
