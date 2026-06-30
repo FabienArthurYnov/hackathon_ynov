@@ -60,6 +60,14 @@ async def get_history() -> list[dict]:
     return conversation_history
 
 
+@app.delete("/api/history")
+async def clear_history() -> dict:
+    global conversation_history
+    conversation_history = []
+    save_history(conversation_history)
+    return {"ok": True}
+
+
 @app.post("/api/chat")
 async def chat(req: ChatRequest):
     return StreamingResponse(stream_chat(req.messages), media_type="text/plain")

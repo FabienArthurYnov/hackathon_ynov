@@ -43,12 +43,29 @@
     gap: 2px;
   }
   .title span { color: var(--muted); font-weight: 400; font-size: 13px; }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
   .status {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 13px;
     color: var(--muted);
+  }
+  .clear-btn {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .clear-btn:hover {
+    background: rgba(255,255,255,0.06);
   }
   .status-dot {
     width: 10px;
@@ -121,9 +138,12 @@
 <body>
   <header>
     <div class="title">AI Chat <span id="model-label"></span></div>
-    <div class="status">
-      <span id="status-dot" class="status-dot"></span>
-      <span id="status-text">Checking…</span>
+    <div class="header-actions">
+      <button id="clear-history" class="clear-btn" type="button">Clear chat history</button>
+      <div class="status">
+        <span id="status-dot" class="status-dot"></span>
+        <span id="status-text">Checking…</span>
+      </div>
     </div>
   </header>
   <div id="chat"></div>
@@ -140,6 +160,7 @@ const sendBtn = document.getElementById('send');
 const modelLabel = document.getElementById('model-label');
 const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
+const clearBtn = document.getElementById('clear-history');
 modelLabel.textContent = "(__MODEL_NAME__)";
 
 let history = [];
@@ -173,19 +194,28 @@ async function loadHistory() {
     const res = await fetch('/api/history');
     if (!res.ok) return;
     const data = await res.json();
-    if (Array.isArray(data) && data.length) {
-      history = data;
-      chatEl.innerHTML = '';
-      data.forEach((entry) => {
-        if (entry && entry.role && entry.content !== undefined) {
-          addBubble(entry.role, entry.content);
-        }
-      });
-    }
+    history = Array.isArray(data) ? data : [];
+    chatEl.innerHTML = '';
+    history.forEach((entry) => {
+      if (entry && entry.role && entry.content !== undefined) {
+        addBubble(entry.role, entry.content);
+      }
+    });
   } catch (err) {
     console.error(err);
   }
 }
+
+clearBtn.addEventListener('click', async () => {
+  try {
+    const res = await fetch('/api/history', { method: 'DELETE' });
+    if (!res.ok) return;
+    history = [];
+    chatEl.innerHTML = '';
+  } catch (err) {
+    console.error(err);
+  }
+});
 
 inputEl.addEventListener('input', () => {
   inputEl.style.height = 'auto';
